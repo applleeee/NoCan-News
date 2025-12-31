@@ -59,7 +59,7 @@ export class AiService {
     const newsListText = newsItems
       .map(
         (item, idx) =>
-          `[${idx}] 제목: ${item.title}\n    출처: ${item.source}\n    요약: ${item.snippet || '없음'}`,
+          `[${idx}] 제목: ${item.title}\n    요약: ${item.snippet || '없음'}`,
       )
       .join('\n\n');
 
@@ -143,7 +143,6 @@ export class AiService {
         (item: ScrapedNews, idx: number) =>
           `[${idx}] 카테고리: ${item.category}
 제목: ${item.title}
-출처: ${item.source}
 본문:
 ${item.content.slice(0, 1500)}${item.content.length > 1500 ? '...(생략)' : ''}`,
       )
@@ -223,11 +222,11 @@ ${newsListText}
     }
 
     const conservativeList = conservative
-      .map((e, idx) => `[${idx}] ${e.source}: ${e.title}`)
+      .map((e, idx) => `[${idx}] ${e.title}`)
       .join('\n');
 
     const liberalList = liberal
-      .map((e, idx) => `[${idx}] ${e.source}: ${e.title}`)
+      .map((e, idx) => `[${idx}] ${e.title}`)
       .join('\n');
 
     const prompt = `당신은 뉴스 분석가입니다. 아래 보수 성향 사설과 진보 성향 사설 목록에서 **같은 주제**를 다루는 쌍을 찾아주세요.

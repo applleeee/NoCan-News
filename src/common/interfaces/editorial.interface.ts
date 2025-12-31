@@ -6,7 +6,6 @@ import { EditorialStance } from '../constants';
 export interface Editorial {
   title: string;
   link: string;
-  source: string;
   pubDate: string;
   content?: string; // 스크래핑 후 본문
   stance: EditorialStance;

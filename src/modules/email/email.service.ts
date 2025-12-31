@@ -183,9 +183,6 @@ export class EmailService {
         <h3 style="font-size: 16px; color: #1a1a2e; font-weight: 600; margin: 0 0 12px 0; line-height: 1.4;">
           ${rewrittenTitle || original.title}
         </h3>
-        <p style="font-size: 11px; color: #6b7280; margin: 0 0 12px 0;">
-          📰 ${original.source}
-        </p>
         ${
           insight
             ? `

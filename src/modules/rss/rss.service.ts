@@ -13,7 +13,6 @@ interface RssItem {
   link?: string;
   pubDate?: string;
   contentSnippet?: string;
-  source?: { $: { url: string }; _: string };
 }
 
 @Injectable()
@@ -22,11 +21,7 @@ export class RssService {
   private readonly parser: Parser;
 
   constructor() {
-    this.parser = new Parser({
-      customFields: {
-        item: ['source'],
-      },
-    });
+    this.parser = new Parser();
   }
 
   /**
@@ -43,7 +38,6 @@ export class RssService {
         title: item.title || '',
         link: item.link || '',
         pubDate: item.pubDate || '',
-        source: item.source?._ || '',
         snippet: item.contentSnippet || '',
         category,
       }));
@@ -140,7 +134,6 @@ export class RssService {
       const editorials: Editorial[] = feed.items.map((item: RssItem) => ({
         title: item.title || '',
         link: item.link || '',
-        source: item.source?._ || '',
         pubDate: item.pubDate || '',
         stance,
       }));
