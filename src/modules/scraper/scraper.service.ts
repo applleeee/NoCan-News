@@ -17,6 +17,9 @@ export class ScraperService {
     if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey);
       this.model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+      this.logger.log('Scraper AI model initialized: gemini-2.0-flash-lite');
+    } else {
+      this.logger.warn('GEMINI_API_KEY not found - AI fallback disabled');
     }
   }
 
@@ -181,7 +184,15 @@ export class ScraperService {
    * AI를 사용하여 HTML에서 본문 추출 (Readability 실패 시 fallback)
    */
   private async extractContentWithAI(html: string): Promise<string | null> {
-    if (!this.model || html.length < 500) {
+    if (!this.model) {
+      this.logger.warn('AI fallback skipped: model not initialized');
+      return null;
+    }
+
+    if (html.length < 500) {
+      this.logger.warn(
+        `AI fallback skipped: HTML too short (${html.length} chars)`,
+      );
       return null;
     }
 
@@ -193,15 +204,19 @@ export class ScraperService {
 HTML:
 ${html.slice(0, 15000)}`;
 
+      this.logger.debug('Calling Gemini API for content extraction...');
       const result = await this.model.generateContent(prompt);
       const text = result.response.text().trim();
 
       if (text === 'NO_CONTENT' || text.length < 100) {
+        this.logger.warn('AI returned NO_CONTENT or insufficient content');
         return null;
       }
 
+      this.logger.debug(`AI extracted ${text.length} chars`);
       return text;
-    } catch {
+    } catch (error) {
+      this.logger.error('AI content extraction failed', error);
       return null;
     }
   }
