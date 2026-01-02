@@ -217,7 +217,15 @@ export class EmailService {
 
     const senderEmail = this.configService.get('GMAIL_USER');
     const baseUrl = this.configService.get<string>('WEB_BASE_URL');
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date()
+      .toLocaleDateString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      })
+      .replace(/\. /g, '-')
+      .replace(/\./g, ''); // YYYY-MM-DD 형식
 
     if (!baseUrl) {
       this.logger.warn(
@@ -249,7 +257,7 @@ export class EmailService {
         await this.transporter.sendMail({
           from: `"NoCan News" <${senderEmail}>`,
           to: recipient.email,
-          subject: `🔇 NoCan News - ${today} | 오늘의 구조적 맥락`,
+          subject: `🔇 NoCan News - ${today} | 오늘의 뉴스`,
           html: personalizedHtml,
           headers: {
             'List-Unsubscribe': `<${unsubscribeLink}>`,
