@@ -20,8 +20,8 @@ export class ScraperService {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey);
-      this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      this.logger.log('Scraper AI model initialized: gemini-1.5-flash');
+      this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      this.logger.log('Scraper AI model initialized: gemini-2.5-flash-lite');
     } else {
       this.logger.warn('GEMINI_API_KEY not found - AI fallback disabled');
     }
