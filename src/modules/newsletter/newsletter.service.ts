@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DevModeConfig } from '../../common/config/dev-mode.config';
 import { NewsCategory } from '../../common/constants';
 import {
+  CategorizedNews,
   Editorial,
   EditorialSynthesis,
   InsightResult,
@@ -13,6 +14,7 @@ import {
 } from '../../common/interfaces';
 import { AiService } from '../ai/ai.service';
 import { EmailService } from '../email/email.service';
+import { SelectionReportService } from '../report/selection-report.service';
 import { RssService } from '../rss/rss.service';
 import { ScraperService } from '../scraper/scraper.service';
 
@@ -65,6 +67,7 @@ export class NewsletterService {
     private readonly aiService: AiService,
     private readonly emailService: EmailService,
     private readonly scraperService: ScraperService,
+    private readonly selectionReportService: SelectionReportService,
     private readonly devModeConfig: DevModeConfig,
   ) {}
 
@@ -128,6 +131,21 @@ export class NewsletterService {
       );
       const selectionResults: SelectionResult[] =
         await Promise.all(selectionPromises);
+
+      // DEV MODE: AI 선별 리포트 생성
+      if (this.devModeConfig.isDevMode) {
+        const selectionResultMap = new Map<NewsCategory, SelectionResult>();
+        categories.forEach((cat, idx) => {
+          selectionResultMap.set(cat.key, selectionResults[idx]);
+        });
+
+        const reportHtml = this.selectionReportService.generateReport(
+          categorizedNews as CategorizedNews,
+          selectionResultMap,
+        );
+        const reportPath = this.selectionReportService.saveReport(reportHtml);
+        this.logger.log(`📊 Selection report generated: ${reportPath}`);
+      }
 
       // 선별된 뉴스 추출
       const selectedNews: NewsItem[] = [];

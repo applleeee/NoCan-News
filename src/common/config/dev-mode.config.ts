@@ -42,6 +42,22 @@ export class DevModeConfig {
   }
 
   /**
+   * 환경에 맞는 Gemini API 키 반환
+   * DEV_MODE=true일 때 GEMINI_API_KEY_DEV, 아니면 GEMINI_API_KEY
+   */
+  getGeminiApiKey(): string | undefined {
+    const key = this.isDevMode
+      ? this.configService.get<string>('GEMINI_API_KEY_DEV')
+      : this.configService.get<string>('GEMINI_API_KEY');
+
+    if (this.isDevMode && key) {
+      this.logger.log('Using GEMINI_API_KEY_DEV (development key)');
+    }
+
+    return key;
+  }
+
+  /**
    * dev mode 배너 출력
    */
   printBanner(): void {

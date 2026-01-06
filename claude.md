@@ -2,10 +2,12 @@
 
 ## 1. Project Overview
 
-- **Description:** 불안을 파는 뉴스를 차단하고, 안도감과 통찰을 파는 이메일 큐레이션 서비스.
-- **Core Value:** "세상의 소음은 끄고, 구조적 맥락만 남긴다 (Noise Off, Context On)."
-- **Target Audience:** 자극적인 정보에 지쳤지만, 세상의 흐름은 놓치고 싶지 않은 지적 욕구가 있는 개인.
-- **Platform:**
+- 현재 Production 운영 중
+
+* **Description:** 불안을 파는 뉴스를 차단하고, 안도감과 통찰을 파는 이메일 큐레이션 서비스.
+* **Core Value:** "세상의 소음은 끄고, 구조적 맥락만 남긴다 (Noise Off, Context On)."
+* **Target Audience:** 자극적인 정보에 지쳤지만, 세상의 흐름은 놓치고 싶지 않은 지적 욕구가 있는 개인.
+* **Platform:**
   - **Landing:** Web (Next.js) - 구독 및 철학 소개.
   - **Service:** Daily Email Newsletter - 매일 아침 7시 자동 발송.
 
@@ -29,20 +31,22 @@
 
 ### 3.1 Repository Structure (Dual Repo)
 
-| 구분 | 역할 | 저장소명 (예시) | 기술 스택 | 배포 환경 |
-|------|------|----------------|-----------|-----------|
-| Consumer | Frontend (Web) | NoCan-News-Web | Next.js, Tailwind CSS | Vercel (Serverless) |
-| Producer | Backend (Worker) | NoCan-News-Worker | NestJS (Standalone) | GitHub Actions (Cron) |
-| Storage | Database | (Common Resource) | Supabase (PostgreSQL) | Cloud Hosted |
+| 구분     | 역할             | 저장소명 (예시)   | 기술 스택             | 배포 환경             |
+| -------- | ---------------- | ----------------- | --------------------- | --------------------- |
+| Consumer | Frontend (Web)   | NoCan-News-Web    | Next.js, Tailwind CSS | Vercel (Serverless)   |
+| Producer | Backend (Worker) | NoCan-News-Worker | NestJS (Standalone)   | GitHub Actions (Cron) |
+| Storage  | Database         | (Common Resource) | Supabase (PostgreSQL) | Cloud Hosted          |
 
 ### 3.2 Detailed Stack
 
 **Frontend (Web):**
+
 - **Framework:** Next.js (App Router)
 - **Styling:** Tailwind CSS (Digital Brutalism Design)
 - **Auth/DB:** `@supabase/supabase-js` (Anon Key 사용)
 
 **Backend (Worker):**
+
 - **Framework:** NestJS (Standalone Mode for Batch Processing)
 - **Scraping:** `rss-parser` (Google News), `cheerio` (본문)
 - **AI Engine:** Gemini API (`gemini-2.5-flash`)
@@ -128,11 +132,11 @@ create table public.subscribers (
 
 ### 6.3 Gemini API Limits (Free Tier)
 
-| 제한 항목 | 값 |
-|-----------|-----|
-| 분당 최대 요청 수 | 5 |
+| 제한 항목              | 값   |
+| ---------------------- | ---- |
+| 분당 최대 요청 수      | 5    |
 | 분당 최대 입력 토큰 수 | 250k |
-| 일일 최대 요청 수 | 20 |
+| 일일 최대 요청 수      | 20   |
 
 ---
 
@@ -148,82 +152,54 @@ create table public.subscribers (
 
 ### Phase 2: Worker Logic Implementation (Current)
 
-- [ ] NestJS 프로젝트 (NoCan-News-Worker) DB 연동 (Supabase Client 주입).
-- [ ] `rss-parser` 및 Google News 수집 로직 구현.
-- [ ] Gemini API 연동 및 프롬프트 튜닝 (Filter/Detox).
-- [ ] Nodemailer 템플릿 작성 (Unsubscribe 링크 포함).
+- [x] NestJS 프로젝트 (NoCan-News-Worker) DB 연동 (Supabase Client 주입).
+- [x] `rss-parser` 및 Google News 수집 로직 구현.
+- [x] Gemini API 연동 및 프롬프트 튜닝 (Filter/Detox).
+- [x] Nodemailer 템플릿 작성 (Unsubscribe 링크 포함).
 
 ### Phase 3: Automation & Launch
 
-- [ ] GitHub Actions 워크플로우 작성 (`cron: '0 22 * * *'`).
-- [ ] 실제 이메일 발송 테스트 (Whitelist).
-- [ ] Service Launch (MVP Open).
+- [x] GitHub Actions 워크플로우 작성 (`cron: '0 22 * * *'`).
+- [x] 실제 이메일 발송 테스트 (Whitelist).
+- [x] Service Launch (MVP Open).
 
 ---
 
-## 8. Testing Strategy
+## 8. 실행 모드
 
-### 8.1 Test Simulator (Mock-based Scenarios)
+### 8.1 NPM Scripts
 
-**Location:** `/test-scenarios/`
+| 스크립트             | AI   | 이메일 | 리포트 | 용도             |
+| -------------------- | ---- | ------ | ------ | ---------------- |
+| `npm run dev`        | Mock | Skip   | O      | 빠른 로컬 테스트 |
+| `npm run dev:ai`     | Real | Skip   | O      | AI 품질 확인     |
+| `npm run start:prod` | Real | Send   | X      | 프로덕션         |
 
-뉴스레터 생성 파이프라인을 실제 AI/RSS/DB 호출 없이 테스트할 수 있는 시뮬레이터.
+### 8.2 환경 변수
 
-**주요 구성요소:**
-- **Fixtures:** Mock 데이터 (RSS, AI 응답, 스크래핑 결과, 구독자 목록)
-- **Mocks:** Mock 서비스 (AiService, RssService, ScraperService, EmailService)
-- **Scenarios:** 5가지 시나리오 (정상, 뉴스 부족, 스크래핑 실패, 인사이트 실패, 사설 누락)
+| 변수                 | 기본값 | 설명                                 |
+| -------------------- | ------ | ------------------------------------ |
+| `DEV_MODE`           | false  | 개발 모드 (리포트 생성, verbose log) |
+| `DEV_AI_ENABLED`     | false  | dev mode에서 AI 활성화               |
+| `NEWSLETTER_DRY_RUN` | false  | 이메일 발송 스킵                     |
+| `GEMINI_API_KEY`     | -      | 프로덕션 Gemini API 키               |
+| `GEMINI_API_KEY_DEV` | -      | 개발용 Gemini API 키                 |
 
-**실행 방법:**
-```bash
-# 개별 시나리오 실행
-npm run scenario 1   # 정상 발송
-npm run scenario 2   # 뉴스 부족 (품질 게이트 차단)
-npm run scenario 3   # 스크래핑 실패 (품질 게이트 차단)
-npm run scenario 4   # AI 인사이트 실패 (경계 케이스)
-npm run scenario 5   # 사설 누락 (정상 발송)
-
-# 전체 시나리오 실행
-npm run scenario all
-```
-
-### 8.2 Quality Gate (품질 게이트)
+### 8.3 Quality Gate (품질 게이트)
 
 뉴스레터 발송 전 품질 검증 기준:
 
-| 검증 항목 | 기준 | 실패 시 동작 |
-|-----------|------|-------------|
-| 뉴스 개수 | 8개 이상 | 이메일 발송 중단 |
-| 스크래핑 성공률 | 60% 이상 | 이메일 발송 중단 |
-| AI 인사이트 | 실패 시 해당 기사만 제외 | 계속 진행 |
-| 사설 매칭 | 선택 사항 | 없어도 발송 |
+| 검증 항목       | 기준                     | 실패 시 동작     |
+| --------------- | ------------------------ | ---------------- |
+| 뉴스 개수       | 8개 이상                 | 이메일 발송 중단 |
+| 스크래핑 성공률 | 60% 이상                 | 이메일 발송 중단 |
+| AI 인사이트     | 실패 시 해당 기사만 제외 | 계속 진행        |
+| 사설 매칭       | 선택 사항                | 없어도 발송      |
 
-### 8.3 Development Workflow
+### 8.4 Selection Report (AI 선별 리포트)
 
-**⚠️ IMPORTANT: 새로운 기능 추가 시 필수 작업**
+DEV_MODE에서 자동 생성되는 HTML 리포트:
 
-1. **인터페이스 변경 시:**
-   - `src/common/interfaces/` 수정 후 반드시 해당 Mock fixture 업데이트
-   - 예: `SelectionResult` 변경 → `test-scenarios/fixtures/ai-responses.fixture.ts` 수정
-
-2. **서비스 로직 변경 시:**
-   - Mock 서비스의 메서드 시그니처 동기화 필수
-   - 예: `AiService.selectNewsForCategory()` 변경 → `MockAiService` 동일하게 수정
-
-3. **새로운 실패 케이스 추가 시:**
-   - `/test-scenarios/scenarios/` 에 새 시나리오 추가
-   - `/test-scenarios/run-scenario.ts` 에 시나리오 등록
-
-4. **품질 게이트 기준 변경 시:**
-   - `NewsletterService.validateQualityGate()` 수정
-   - 관련 시나리오의 `expectedResult` 업데이트
-
-**테스트 실행 주기:**
-- 기능 추가/수정 후 즉시 `npm run scenario all` 실행
-- PR 생성 전 필수 검증
-- GitHub Actions에서 자동 실행 (추후 추가 예정)
-
-**Mock 데이터 관리:**
-- Fixture는 실제 인터페이스와 100% 일치해야 함
-- TypeScript 컴파일 에러 발생 시 즉시 수정
-- Mock 데이터는 실제 API 응답을 최대한 반영
+- 위치: `reports/selection-report-YYYY-MM-DD-HHMM.html`
+- 내용: 카테고리별 전체 기사 목록 + AI 선별 결과 + 필터링 통계
+- 용도: AI 선별 품질 확인

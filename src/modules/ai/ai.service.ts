@@ -1,6 +1,5 @@
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DevModeConfig } from '../../common/config/dev-mode.config';
 import { NewsCategory } from '../../common/constants';
 import {
@@ -19,11 +18,8 @@ export class AiService {
   private readonly genAI: GoogleGenerativeAI;
   private readonly model: GenerativeModel;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly devModeConfig: DevModeConfig,
-  ) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+  constructor(private readonly devModeConfig: DevModeConfig) {
+    const apiKey = this.devModeConfig.getGeminiApiKey();
     if (!apiKey && this.devModeConfig.isAiEnabled) {
       throw new Error('GEMINI_API_KEY is not configured');
     }
@@ -90,33 +86,47 @@ export class AiService {
       world: '국제/세계',
     };
 
-    const newsListText = newsItems
+    // 상위 20개만 AI에게 전달 (구글 뉴스 RSS는 이미 중요도순 정렬)
+    const limitedItems = newsItems.slice(0, 20);
+
+    const newsListText = limitedItems
       .map(
         (item, idx) =>
           `[${idx}] 제목: ${item.title}\n    요약: ${item.snippet || '없음'}`,
       )
       .join('\n\n');
 
-    const prompt = `당신은 뉴스 큐레이터입니다. 아래는 ${categoryNames[category]} 카테고리의 뉴스 목록입니다.
+    const prompt = `당신은 뉴스 큐레이터입니다. 아래 목록은 **${categoryNames[category]}** 카테고리의 뉴스이며, 이미 **중요도 순으로 정렬**되어 있습니다.
 
-                    ## 핵심 철학: "소음(Noise)은 끄고, 맥락(Context)은 남긴다"
+                    ## 핵심 철학: "소음(Noise)은 끄고, 맥락(Context)만 남긴다"
 
-                    ## 작업
-                    1. **독성 필터링 (Filter Out)**: 아래 기준에 해당하는 뉴스를 식별하여 제외하세요.
-                      - crime: **개인적인** 살인, 강도, 묻지마 폭행, 교통사고, 화재 등 개별 사건사고.
-                      - gossip: 연예인 사생활, 루머, 단순히 말초신경을 자극하는 가십.
-                      - politicalStrife: 소모적인 정치적 비방, 막말, 단순히 감정을 자극하는 당파 싸움.
+                    ## 작업 지시 (순차 검토)
+                    목록의 **상단(0번)**부터 순서대로 검토하여, 아래 **[탈락 기준]**에 걸리지 않는 뉴스 **3개**를 선택하세요.
+                    (중요도 판단을 위해 목록을 재정렬하지 마세요. 상단에 있는 뉴스가 기본적으로 더 중요한 뉴스입니다.)
 
-                    2. **중요 예외 처리 (CRITICAL - DO NOT Filter)**:
-                      - **구조적 사건(Structural Events)**은 '체포', '전쟁', '사망', '군사작전' 등의 키워드가 포함되어 있어도 **절대 필터링하지 마세요.**
-                      - 예: 국가 지도자의 체포/망명, 전쟁 발발, 쿠데타, 거시경제에 영향을 주는 테러, 국제법적 분쟁 등.
-                      - 판단 기준: "이 사건이 국제 정세, 국가 경제, 법적 구조에 영향을 미치는가?" -> Yes라면 **범죄(crime)로 분류하지 말고 유지하세요.**
+                    ## 1. 탈락 기준 (Filter Out - 과감히 버릴 것)
+                    아래 중 하나라도 해당하면 **절대 선택하지 마세요.**
 
-                    3. **뉴스 선별 (Selection Criteria)**:
-                      - 필터링 후 남은 뉴스 중 가장 거시적이고 구조적인 영향력이 큰 3개를 선택하세요.
-                      - 단순한 '현상(Phenomenon)' 보다는 '맥락(Context)'이 있는 뉴스를 우선순위에 둡니다.
-                      - **[빈도 규칙 추가]**: 목록 내에서 **동일한 주제가 반복적으로 등장한다면**, 이는 현재 매우 중요한 이슈라는 신호입니다. 해당 주제를 **최우선으로 선택**하세요. (단, 여전히 가십/범죄는 제외해야 함)
-                      - 같은 주제의 기사가 여러 개라면, 그중 **가장 제목이 건조하고 분석적인** 하나만 선택하세요. (중복 제거 효과)
+                    A. **독성 (Toxic):**
+                      - **개인적 비극:** 살인, 화재, 교통사고 등 구조적 함의가 없는 개별 사건.
+                      - **가십/정치비방:** 연예인 사생활, 소모적인 정치적 막말.
+                      - *(단, 전쟁, 국가 지도자의 체포/망명, 테러 등 **국제 정세/거시 경제에 영향을 주는 구조적 사건**은 독성으로 분류하지 말고 유지할 것)*
+
+                    B. **비뉴스 (Non-News) - 홍보 및 일반론:**
+                      - **재테크/투자 팁:** **"~가 뜬다", "고수의 선택", "수익률 대박", "지금 사라", "개미들 매수"** 등 개인 투자 조언이나 종목 추천성 기사. (**경제 카테고리에서 필수 제거**)
+                      - **단순 홍보(PR):** 지자체/기관의 "비전 선포", "추진 계획", "모집", "단순 MOU(업무협약)".
+                      - **일반론/칼럼:** 구체적 사건 없이 현상만 분석한 글.
+                      - **단순 시황:** 특이사항 없는 일상적인 주가/환율 등락.
+
+                    C. **카테고리 불일치:**
+                      - **현재 카테고리(${categoryNames[category]})와 맞지 않는 뉴스**는 제외하세요.
+
+                    ## 2. 선택 기준 (Selection - 남겨야 할 것)
+                    탈락 기준을 통과한 뉴스 중, **'오늘 발생한 구체적 사건(Event)'**을 선택하세요.
+                    그중 구조적 의미(Context)가 있는 뉴스를 우선적으로 선택하세요.
+
+                    - **임계점 돌파:** 단순 수치 나열이 아니라, **"사상 최고/최저", "임계점 돌파"** 등 시장 구조가 바뀌는 신호.
+                    - **규모의 경제:** MOU나 협약이라도 **국가 간 조약**이나 **산업 지형을 바꾸는 대규모 계약(조 단위)**은 선택.
 
                     ## 뉴스 목록
                     ${newsListText}
@@ -124,14 +134,14 @@ export class AiService {
                     ## 출력 형식 (JSON만 출력, 다른 텍스트 없이)
                     {
                       "filterStats": {
-                        "scanned": ${newsItems.length},
+                        "scanned": ${limitedItems.length},
                         "blocked": {
-                          "crime": [차단된 '개인적' 범죄 뉴스 수],
-                          "gossip": [차단된 가십 뉴스 수],
-                          "politicalStrife": [차단된 소모적 정치 뉴스 수]
+                          "crime": [개인적 범죄/사고 차단 수],
+                          "gossip": [가십/홍보/비뉴스 차단 수],
+                          "politicalStrife": [정치비방 차단 수]
                         }
                       },
-                      "selectedIndices": [선택된 뉴스의 인덱스 번호 3개]
+                      "selectedIndices": [선택된 뉴스의 인덱스 번호 (최대 3개)]
                     }`;
 
     try {

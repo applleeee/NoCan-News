@@ -1,7 +1,6 @@
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { Readability } from '@mozilla/readability';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { JSDOM } from 'jsdom';
@@ -14,10 +13,9 @@ export class ScraperService {
   private readonly model: GenerativeModel;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly devModeConfig: DevModeConfig,
   ) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    const apiKey = this.devModeConfig.getGeminiApiKey();
     if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey);
       this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });

@@ -12,19 +12,15 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "cross-env NEWSLETTER_DRY_RUN=false node dist/src/main",
-    "start:dry-run": "cross-env NEWSLETTER_DRY_RUN=true node dist/src/main",
-    "dev:send": "cross-env NEWSLETTER_DRY_RUN=false nest start --watch",
-    "dev:dry-run": "cross-env NEWSLETTER_DRY_RUN=true nest start --watch",
     "dev": "cross-env DEV_MODE=true nest start",
-    "dev:with-ai": "cross-env DEV_MODE=true DEV_AI_ENABLED=true nest start",
+    "dev:ai": "cross-env DEV_MODE=true DEV_AI_ENABLED=true nest start",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "supabase:types": "supabase gen types typescript --linked > src/common/types/supabase.ts",
-    "scenario": "cd test-scenarios && npm run scenario"
+    "supabase:types": "supabase gen types typescript --linked > src/common/types/supabase.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
