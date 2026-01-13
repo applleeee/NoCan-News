@@ -525,10 +525,16 @@ export class NewsletterService {
     const contentData = this.buildContentData(data, filterStats);
     const title = this.emailService.getEmailSubject();
 
+    // 수신거부 링크 비활성화 (UI는 유지, 클릭 불가)
+    const archivedHtml = html.replace(
+      /<a\s+href="[^"]*\/unsubscribe[^"]*"([^>]*)>(수신거부[^<]*)<\/a>/gi,
+      '<span$1 style="color: #9ca3af; font-size: 11px;">$2</span>',
+    );
+
     await this.supabaseService.saveNewsletter({
       sendDate: new Date(),
       title,
-      contentHtml: html,
+      contentHtml: archivedHtml,
       contentData,
     });
   }
