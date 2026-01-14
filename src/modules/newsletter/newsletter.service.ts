@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as cheerio from 'cheerio';
 import { DevModeConfig } from '../../common/config/dev-mode.config';
 import { NewsCategory } from '../../common/constants';
 import {
@@ -525,11 +526,30 @@ export class NewsletterService {
     const contentData = this.buildContentData(data, filterStats);
     const title = this.emailService.getEmailSubject();
 
-    // 수신거부 링크 비활성화 (UI는 유지, 클릭 불가)
-    const archivedHtml = html.replace(
-      /<a\s+href="[^"]*\/unsubscribe[^"]*"([^>]*)>(수신거부[^<]*)<\/a>/gi,
-      '<span$1 style="color: #9ca3af; font-size: 11px;">$2</span>',
-    );
+    // 수신거부 링크 제거 (cheerio로 HTML 파싱하여 안정적으로 처리)
+    const $ = cheerio.load(html);
+
+    // unsubscribe 링크를 찾아서 텍스트로 변환
+    $('a').each((_, element) => {
+      const $el = $(element);
+      const href = $el.attr('href') || '';
+      const text = $el.text();
+
+      // href에 unsubscribe가 포함되어 있거나, 텍스트에 수신거부/Unsubscribe가 있는 경우
+      if (
+        href.includes('unsubscribe') ||
+        href.includes('{{UNSUBSCRIBE_URL}}') ||
+        text.includes('수신거부') ||
+        text.includes('Unsubscribe')
+      ) {
+        // 링크를 span으로 교체 (클릭 불가능한 텍스트)
+        $el.replaceWith(
+          `<span style="color: #9ca3af; font-size: 11px;">${text}</span>`,
+        );
+      }
+    });
+
+    const archivedHtml = $.html();
 
     await this.supabaseService.saveNewsletter({
       sendDate: new Date(),
