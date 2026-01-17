@@ -281,11 +281,14 @@ export class EmailService {
 
         successCount++;
 
-        // Gmail API 제한 방지를 위한 딜레이 (500ms)
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Gmail 대량 발송 감지 회피를 위한 랜덤 딜레이 (5~15초)
+        const randomDelay = Math.floor(Math.random() * 10000) + 5000;
+        await new Promise((resolve) => setTimeout(resolve, randomDelay));
       } catch (error) {
         failCount++;
-        this.logger.error(`Failed to send to ${recipient.email}: ${error}`);
+        this.logger.error(
+          `Failed to send to ${recipient.email.slice(0, 5)}...: ${error}`,
+        );
       }
     }
 
