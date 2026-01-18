@@ -30,6 +30,13 @@ CREATE POLICY "Allow anonymous insert"
   TO anon
   WITH CHECK (true);
 
+-- Allow select for unsubscribe operation
+CREATE POLICY "Allow select for unsubscribe"
+ON public.subscribers
+FOR SELECT
+TO anon
+USING (true);
+
 -- Allow unsubscribe by id
 CREATE POLICY "Allow unsubscribe by id"
 ON public.subscribers
