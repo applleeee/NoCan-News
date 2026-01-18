@@ -445,7 +445,7 @@ null`;
     conservativeText: string,
     liberalText: string,
     topic: string,
-  ): Promise<EditorialSynthesis> {
+  ): Promise<EditorialSynthesis | null> {
     this.logger.log(`Synthesizing editorials on topic: ${topic}`);
 
     // DEV MODE: AI 스킵 - mock 통합 분석 반환
@@ -506,13 +506,7 @@ ${liberalText.slice(0, 2000)}
       return JSON.parse(jsonMatch[0]) as EditorialSynthesis;
     } catch (error) {
       this.logger.error('Failed to synthesize editorials', error);
-      return {
-        topic,
-        conflict: '분석을 수행할 수 없습니다.',
-        argumentA: '보수 측 의견 요약 불가',
-        argumentB: '진보 측 의견 요약 불가',
-        synthesis: '추가 분석이 필요합니다.',
-      };
+      return null;
     }
   }
 

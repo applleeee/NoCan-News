@@ -274,12 +274,13 @@ export class NewsletterService {
 
         // 5-4. AI 통합 분석
         if (consContent && libContent) {
-          editorialSynthesis = await this.aiService.synthesizeEditorials(
-            consContent,
-            libContent,
-            match.topic,
-          );
-          metrics.editorial.synthesisSuccess = true;
+          editorialSynthesis =
+            (await this.aiService.synthesizeEditorials(
+              consContent,
+              libContent,
+              match.topic,
+            )) ?? undefined;
+          metrics.editorial.synthesisSuccess = !!editorialSynthesis;
           this.logger.log(`Editorial synthesis completed: ${match.topic}`);
         } else {
           this.logger.warn('Failed to scrape editorial contents');
